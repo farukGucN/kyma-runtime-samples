@@ -27,7 +27,7 @@ In this scenario you deploy an application router and expose it over the interne
 
 The backend is a simple HttpBin application that returns request headers as a response.
 
-![scenario](assets/scenario.svg)
+![scenario](assets/scenario.drawio.svg)
 
 > [!Note]
 > A standalone application router is deployed with 2 replicas. To achieve session affinity, you must coonfigur the [DestinationRule](k8s/deployment.yaml).
