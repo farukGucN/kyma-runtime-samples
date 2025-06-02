@@ -19,18 +19,18 @@ You can use the application router capabilities in SAP BTP, Kyma runtime either 
 
 For more information on both options, see the [Using SAP Application Router with Kyma runtime](https://blogs.sap.com/2021/12/09/using-sap-application-router-with-kyma-runtime/) blog post.
 
-This sample, shows how to deploy a standalone Application Router on SAP BTP, Kyma runtime.
+This sample shows how to deploy a standalone Application Router on SAP BTP, Kyma runtime.
 
 ## Scenario
 
-In this scenario you deploy an application router and expose it over the internet using an APIRule custom resource. The APIRule exposes a backend API using configured destinations and routes.
+In this scenario, you deploy an application router and expose it over the internet using an APIRule custom resource. The APIRule exposes a backend API using configured destinations and routes.
 
 The backend is a simple HttpBin application that returns request headers as a response.
 
-![scenario](assets/scenario.drawio.svg)
+![scenario](./assets/scenario.drawio.svg)
 
 > [!Note]
-> A standalone application router is deployed with 2 replicas. To achieve session affinity, you must coonfigur the [DestinationRule](k8s/deployment.yaml).
+> A standalone application router is deployed with 2 replicas. To achieve session affinity, you must configure the [DestinationRule](k8s/deployment.yaml). Session affinity allows all subsequent traffic and requests from an initial client session to be passed to the same server.
 
 ## Prerequisites
 
