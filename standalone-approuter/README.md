@@ -30,7 +30,7 @@ The backend is a simple HttpBin application that returns request headers as a re
 ![scenario](./assets/scenario.drawio.svg)
 
 > [!Note]
-> A standalone application router is deployed with 2 replicas. To achieve session affinity, you must configure the [DestinationRule](k8s/deployment.yaml). Session affinity allows all subsequent traffic and requests from an initial client session to be passed to the same server.
+> A standalone application router is deployed with 2 replicas. To achieve session affinity, you must configure the [DestinationRule](k8s/deployment.yaml). Session affinity allows all subsequent traffic and requests from an initial client session to be passed to the same replica.
 
 ## Prerequisites
 
