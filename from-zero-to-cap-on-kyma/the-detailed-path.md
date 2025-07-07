@@ -1,4 +1,4 @@
-# Overview
+# Detailed Path
 
 Using this sample, you start from scratch to deploy a [CAP](https://cap.cloud.sap/docs/) NodeJS application on SAP BTP, Kyma runtime.
 
@@ -32,7 +32,7 @@ Using this sample, you start from scratch to deploy a [CAP](https://cap.cloud.sa
 
 ## Initializing CAP Application
 
-1. Initialize the CAP Bookshop sample.
+1. Initialize the CAP Bookshop sample
 
    ```shell
    make init
@@ -45,14 +45,14 @@ Using this sample, you start from scratch to deploy a [CAP](https://cap.cloud.sa
 > [!NOTE]
 > CAP promotes getting started with minimal upfront setup, based on convention over configuration, and a grow-as-you-go approach, adding settings and tools later on, only when you need them. For more information, see [Introduction to CAP](https://cap.cloud.sap/docs/about/).
 
-2. Run the application locally.
+2. Run the application locally
 
    ```shell
    make run-local
    ```
 
-3. Access the CAP Srv at <http://localhost:4004>.
-4. Terminate the local running app with `^C`.
+3. Access the CAP Srv at <http://localhost:4004>
+4. Terminate the local running app with `^C`
 
 ## Deploying to Kyma
 
@@ -74,26 +74,30 @@ Using this sample, you start from scratch to deploy a [CAP](https://cap.cloud.sa
    }
    ```
 
-   > [!Note]
-   > The standalone Application Router is used to simplify the setup and **is not a must**. It should also be possible to use the managed approuter because your CAP APIs are exposed via Fiori or UI5 applications and accessed using workzone.
+> [!Note]
+> The standalone Application Router is used to simplify the setup and **is not a must**. It should also be possible to use the managed approuter because your CAP APIs are exposed via Fiori or UI5 applications and accessed using workzone.
 
 ### Configuring Environment Variables
 
-1. Set up the required environment variables:
+1. Set up the required environment variables.
 > [!Note] 
 > You can download the kubeconfig file from your Kyma runtime instance in the SAP BTP cockpit. If you have already configured the default Kubeconfig, you should also be able to access the kubeconfig from your local machine under `~/.kube/config`.
    - In shell
 
       ```shell
+      export DOCKER_ACCOUNT=<your-docker-account>
       export KUBECONFIG=<your-kubeconfig-file-path>
       export NAMESPACE=<your-kyma-namespace>
+      export CLUSTER_DOMAIN=$(kubectl get cm -n kube-system shoot-info -ojsonpath='{.data.domain}')
       ```
 
    - In Windows powershell
 
       ```powershell
+      $ENV:DOCKER_ACCOUNT="<your-docker-account>"
       $ENV:KUBECONFIG="<your-kubeconfig-file-path>"
       $ENV:NAMESPACE="<your-kyma-namespace>"
+      $ENV:CLUSTER_DOMAIN=$(kubectl get cm -n kube-system shoot-info -ojsonpath='{.data.domain}')
       ```
 
 2. **[Mac users]** Export the DOCKER_HOST.
@@ -102,14 +106,14 @@ Using this sample, you start from scratch to deploy a [CAP](https://cap.cloud.sa
    export DOCKER_HOST=unix://${HOME}/.docker/run/docker.sock
    ```
 
-### Preparing for Deployment
+### Preparing for the Deployment
 
 1. Do a basic check to see if the cluster is reachable. Running any of the basic commands such as `kubectl cluster-info` or `kubectl get pods` or `kubectl get namespaces` successfully should confirm that. If an error occurs, check your kubeconfig file and ensure that it is correctly set up to point to your Kyma cluster. Also, check if the cluster was provisioned successfully in the SAP BTP cockpit under your subaccount.
 
 2. Create a namespace. You can skip this step if you already have a namespace. You can use any non-system namespace of your choice to deploy the sample application.
 
 > [!Note]
-> The following are some of the system namespaces:
+> The following are some of system namespaces:
 > - `kube-system`
 > - `istio-system`
 > - `kyma-system`
@@ -120,7 +124,7 @@ Using this sample, you start from scratch to deploy a [CAP](https://cap.cloud.sa
    ```
 
 3. Enable Istio injection for the namespace. Set the kubeconfig context to point to the namespace and create the Docker image pull Secret.
-
+  
    > [!Note]
    > - You will need a Docker API Key so that Kubernetes can pull the Docker images from your Docker account.
    > - `docker server` could be e.g. `https://index.docker.io/v1/` or your private docker registry server. **For this example, you may use the public Docker registry. However the recommended approach is to use a private Docker registry**.
@@ -131,11 +135,43 @@ Using this sample, you start from scratch to deploy a [CAP](https://cap.cloud.sa
    make prepare-kyma-for-deployment
    ```
 
+### Building Docker Images
+
+On Kyma runtime, application run as Docker containers. They require a Docker image to be created out of the application code/binaries.
+
+The Docker image can be stored in the Docker registry. It can be a private Docker registry where access is restricted with credentials.
+
+This sample uses a pack to build the Docker images.
+
+1. Buid a Docker image and follow the logs.
+
+   ```shell
+   make build-hana-deployer --just-print
+   ```
+
+   The `pack` intelligently identifies how to pack the source code and create the necessary artifacts. The same is also true for Java applications.
+
+2. Build and push the Hana deployer image.
+
+   ```shell
+   make build-hana-deployer push-hana-deployer
+   ```
+
+3. Build and push the CAP Srv image.
+
+   ```shell
+   make build-cap-srv push-cap-srv
+   ```
+
+4. Build and push the Approuter image.
+
+   ```shell
+   make build-approuter push-approuter
+   ```
+
 ### Creating Helm Charts
 
 Having the artifacts in place, focus to deploying the application.
-
-First we need the configurations to tell Kyma what and how we want to deploy.
 
 The sample uses [Helm charts](https://helm.sh/) to define the required configurations and then deploy them on the Kyma runtime.
 
@@ -164,39 +200,63 @@ The sample uses [Helm charts](https://helm.sh/) to define the required configura
    make add-istio-destination-rule
    ```
 
-3. Update the [bookshop/chart/values.yaml](bookshop/chart/values.yaml) to add the environment variables for the **approuter section** that is used for cookies. <!-- markdown-link-check-disable-line -->
+### Deploying Helm Chart
 
-   ```yaml
-     health:
-       liveness:
-         path: /
-       readiness:
-         path: /
-     env:
-       PLATFORM_COOKIE_NAME: KYMA_APP_SESSION_ID # This is the cookie name used by the approuter to store session information
-   ```
-
-### Building and Deploying
-
-1. Add containerize.
+1. Check the `make` command by running:
 
    ```shell
-   make add-containerize
+   make deploy-dry-run --just-print
    ```
 
-2. Build and deploy to Kyma runtime.
+The command overrides various properties defined in `chart/values.yaml`. This is a standard Helm feature that you can override your values by specifying them in the command line. This obviates the need to modify the `values.yaml` file. Of course, you can also update the `values.yaml` directly.
+
+2. Run the command to do a dry run
 
    ```shell
-   make cds-build-deploy
+   make deploy-dry-run
+   ```
+
+   Take some time to understand the deployment and what the configuration looks like. It is interesting to notice that all these deployment configurations are auto-generated using CDS.
+
+   **This ensures that you as a developer don't have to work with the complexities of Helm charts and configurations. At the same time, these pre-shipped charts follow the best practices when it comes to deploying on Kyma.**
+
+3. Build and deploy to the Kyma runtime.
+
+   ```shell
+   make deploy
    ```
 
 ### Verifying the Deployment
 
-To verify your deployment, access the application using the app router URL. It should be similar to this one: <https://bookshop-approuter-${NAMESPACE}.${KYMA_CLUSTER_DOMAIN}>.
+1. Check the state of the application pods. **Wait until the pods are in running state.**
+
+   ```shell
+   make check-status
+   ```
+
+2. Check the hana deployer logs.
+
+   ```shell
+   make check-hana-deployer-logs
+   ```
+
+3. Check the CAP application logs.
+
+   ```shell
+   make check-cap-srv-logs
+   ```
+
+4. Check the Application Router logs.
+
+   ```shell
+   make check-approuter-logs
+   ```
+
+5. Access the application using the Application Router URL. It should be similar to this one: <https://bookshop-approuter-${NAMESPACE}.${KYMA_CLUSTER_DOMAIN}>.
 
 ### Cleaning Up
 
-1. Delete the Helm chart. Deleting the Helm chart you remove all the deployed applications, service instances, and their bindings.
+1. Delete the Helm chart. This command removes all the deployed applications, service instances, and their bindings.
 
    ```shell
    make undeploy
@@ -207,10 +267,6 @@ To verify your deployment, access the application using the app router URL. It s
    ```shell
    make cleanup
    ```
-
-## Detailed Path
-
-For more information on the built artifacts and deploying them step by step, see [Detailed Path](./the-detailed-path.md).
 
 ## CAP Version
 
