@@ -1,4 +1,4 @@
-# Detailed Path
+# From Zero to CAP on Kyma - Detailed Path
 
 Using this sample, you start from scratch to deploy a [CAP](https://cap.cloud.sap/docs/) NodeJS application on SAP BTP, Kyma runtime.
 
