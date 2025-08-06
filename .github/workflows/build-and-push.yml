@@ -25,7 +25,7 @@ jobs:
 
     - name: Build Docker image
       run: |
-        docker build -t ${{ secrets.DOCKER_USERNAME }}/mssql -f docker/Dockerfile .
+        docker build -t ${{ secrets.DOCKER_USERNAME }}/mssql -f database-mssql/docker/Dockerfile database-mssql
 
     - name: Push Docker image
       run: |
