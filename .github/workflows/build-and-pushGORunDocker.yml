@@ -1,0 +1,64 @@
+name: Run and Test Dockerized API
+
+on:
+  workflow_dispatch:
+
+jobs:
+  integration-test:
+    runs-on: ubuntu-latest
+
+    services:
+      mssql:
+        image: mcr.microsoft.com/mssql/server:2019-latest
+        ports:
+          - 1433:1433
+        env:
+          SA_PASSWORD: Yukon900
+          ACCEPT_EULA: "Y"
+        options: >-
+          --health-cmd "exit 0"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set platform for M1/M2 compatibility
+      run: echo "DOCKER_DEFAULT_PLATFORM=linux/amd64" >> $GITHUB_ENV
+
+    - name: Build Docker image
+      run: |
+        DOCKER_DEFAULT_PLATFORM=linux/amd64 \
+        docker build -t api-mssql-go -f api-mssql-go/docker/Dockerfile api-mssql-go
+
+    - name: Run API container
+      run: |
+        docker run -d --name api-mssql-go \
+          -p 8000:8000 \
+          -e MYAPP_username=sa \
+          -e MYAPP_password=Yukon900 \
+          -e MYAPP_database=DemoDB \
+          -e MYAPP_host=host.docker.internal \
+          -e MYAPP_port=1433 \
+          api-mssql-go
+
+    - name: Wait for container to be ready
+      run: sleep 15  # optional, ensure MSSQL is up
+
+    - name: Test GET endpoint
+      run: |
+        curl -i -H "Accept: application/json" -H "Content-Type: application/json" \
+        -X GET http://localhost:8000/orders || exit 1
+
+    - name: Test POST endpoint
+      run: |
+        curl --data '{"order_id":"10000099","description":"Test from GitHub Actions"}' \
+        -H "Content-Type: application/json" \
+        http://localhost:8000/orders || exit 1
+
+    - name: Stop and remove container
+      run: |
+        docker stop api-mssql-go
+        docker rm api-mssql-go
